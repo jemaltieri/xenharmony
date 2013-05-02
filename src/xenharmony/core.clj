@@ -1,4 +1,6 @@
-(ns xenharmony.core)
+(ns xenharmony.core
+  "Functions for harmony calculations"
+  [:require [clojure.math.numeric-tower :as math]])
 
 (defn filter-multiples
   [coll fac]
@@ -46,31 +48,30 @@
   (apply map-ext + 0 vs))
 
 
-(deftype Ratio [numerator denominator]
-  (comment  (numerator [this] numerator)
-            (denominator [this] denominator)
-            (to-number [this] (/ numerator denominator))))
+(defrecord Ratio [numerator denominator])
 
-(deftype Monzo [monzovec]
-  (comment
-    (to-vector [this] monzovec)))
+(defrecord Monzo [vector])
 
 (defprotocol IJust
   "A protocol defining a JI harmonic relationship between two pitches"
   (to-monzo [this])
-  (to-ratio [this]))
+  (to-ratio [this])
+  (mult [this multratio]))
 
 (extend-type Ratio
   IJust
   (to-monzo [this]
-    (apply map-ext - 0 (map (fn [facs] (map (fn [p] (count (filter #(= p %)
-                                                                 facs)))
-                                           (primes-below (inc (apply max facs)))))
-                            (map primefactors
-                                 [numerator denominator]))))
-  (to-ratio [this] this))
+    (Monzo. (apply map-ext - 0 (map (fn [facs] (map (fn [p] (count (filter #(= p %)
+                                                                         facs)))
+                                                   (primes-below (inc (apply max facs)))))
+                                    (map primefactors
+                                         [(.numerator this) (.denominator this)])))))
+  (to-ratio [this] this)
+  (mult [this multratio] (Ratio. (* (.numerator this) (.numerator multratio))
+                                 (* (.denominator this) (.denominator multratio)))))
 
 (extend-type Monzo
   IJust
   (to-monzo [this] this)
-  (to-ratio [this] this))
+  (to-ratio [this] this) ;;todo
+  (mult [this multratio] this)) ;;todo
