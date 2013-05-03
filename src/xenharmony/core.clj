@@ -2,32 +2,10 @@
   "Functions for harmony calculations"
   [:require [clojure.math.numeric-tower :as math]])
 
-(defn filter-multiples
-  [coll fac]
-  (filter #(or (== % fac)
-               (pos? (rem % fac)))
-          coll))
 
-(defn sieve-of-e
-  ([coll]
-     (sieve-of-e coll 2))
-  ([coll cur]
-     (if (> cur (/ (apply max coll) 2))
-       coll
-       (let [newcoll (filter-multiples coll cur)]
-         (recur newcoll (nth newcoll (inc (.indexOf newcoll cur))) )))))
 
-(defn primes-below
-  [n]
   (sieve-of-e (range 2 n)))
-
-(defn primefactors ;;lifted from the interweb: http://sudoreadme.blogspot.com/2012/03/prime-numbers-kata-in-clojure.html
-  ([n] (primefactors n 2))
   ([n candidate]
-    (cond (<= n 1) (list)
-          (= 0 (rem n candidate)) (conj (primefactors (/ n candidate)) candidate)
-          :else (primefactors n (inc candidate)))))
-
 (defn fac-map
   [n]
   (reduce (fn [m fac] (if (not (contains? m fac))
