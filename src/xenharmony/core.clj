@@ -4,15 +4,28 @@
 
 
 
-  (sieve-of-e (range 2 n)))
-  ([n candidate]
-(defn fac-map
+(defn fac-map ;; can just use (frequencies (primefactors 42))
   [n]
   (reduce (fn [m fac] (if (not (contains? m fac))
                        (assoc m fac 1)
                        (update-in m [fac] inc)))
           {}
           (primefactors n)))
+
+(defn add-monzo-maps
+  [& ms]
+  (apply merge-with + ms))
+
+(defn negate-map-vals
+  [m]
+  (into {}
+        (map (fn [[k v]] [k (* -1 v)])
+             m)))
+
+(defn monzo-map
+  [ratio] ;;clojure ratio
+  (add-monzo-maps (frequencies (primefactors (numerator ratio)))
+                  (negate-map-vals (frequencies (primefactors (denominator ratio))))))
 
 (defn map-ext [f ext & seqs] ;;lifted from http://stackoverflow.com/questions/9033678/changing-map-behaviour-in-clojure
   (lazy-seq
