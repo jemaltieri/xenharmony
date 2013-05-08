@@ -52,11 +52,21 @@
         (map (fn [base exp] [base exp])
              primes/lazy-primes
              v)))
+(defn nrt
+  [x n]
+  (Math/pow x (/ 1 n)))
+
+(def st
+  (nrt 2 12))
+
+(defn logx
+  [base x]
+  (/ (Math/log x)
+     (Math/log base)))
 
 (defn log2
   [x]
-  (/ (Math/log x)
-     (Math/log 2)))
+  (logx 2 x))
 
 (defn get-nlimit-edo-patent-val
   [limit edo-steps]
@@ -71,7 +81,44 @@
              primes/lazy-primes
              patent-val)))
 
-(defn tenney-height
+(defn tenney-height ;;find another source for equation - this from the wiki doesn't work right
   [monzo]
   (apply + (map (fn [[k v]] (* v (log2 k)))
                 monzo)))
+
+(defn interval-to-cents
+  [i]
+  (* (logx (nrt 2 12) i)
+     100))
+
+(defn edo-interval
+  [i steps-per-octave]
+  (Math/pow 2 (/ i steps-per-octave)))
+
+(defn midi2freq
+  [m]
+  (* 440 (edo-interval (- m 69) 12)))
+
+(defn freq2midi
+  [f]
+  (+ 69 (/ (interval-to-cents (/ f 440))
+           100)))
+
+(def chromatic
+  ["C" "C#" "D" "D#" "E" "F" "F#" "G" "G#" "A" "A#" "B"])
+
+(defn midi2note
+  [m]
+  (nth chromatic
+       (mod m 12)))
+
+(defn note2midi
+  ([n]
+     (note2midi n 4))
+  ([n oct]
+     (+ (* (inc oct) 12)
+        (.indexOf chromatic n))))
+
+;;an interval is a function.
+;;an edo is a recursive sequence of the generating function
+;;a scale is a sequence
