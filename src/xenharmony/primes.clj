@@ -24,7 +24,7 @@
   (some #(when (> % n) %)
         lazy-primes))
 
-(defn new-primes-up-to
+(defn primes-up-to
   [n]
   (take-while #(>= n %)
               lazy-primes))

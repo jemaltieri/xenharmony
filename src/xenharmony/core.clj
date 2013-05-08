@@ -1,16 +1,9 @@
 (ns xenharmony.core
   "Functions for harmony calculations"
-  [:require [clojure.math.numeric-tower :as math]])
+  [:require
+   [clojure.math.numeric-tower :as math]
+   [xenharmony.primes :as primes]])
 
-
-
-(defn fac-map ;; can just use (frequencies (primefactors 42))
-  [n]
-  (reduce (fn [m fac] (if (not (contains? m fac))
-                       (assoc m fac 1)
-                       (update-in m [fac] inc)))
-          {}
-          (primefactors n)))
 
 (defn add-monzo-maps
   [& ms]
@@ -24,8 +17,8 @@
 
 (defn monzo-map
   [ratio] ;;clojure ratio
-  (add-monzo-maps (frequencies (primefactors (numerator ratio)))
-                  (negate-map-vals (frequencies (primefactors (denominator ratio))))))
+  (add-monzo-maps (frequencies (primes/prime-factors (numerator ratio)))
+                  (negate-map-vals (frequencies (primes/prime-factors (denominator ratio))))))
 
 (defn map-ext [f ext & seqs] ;;lifted from http://stackoverflow.com/questions/9033678/changing-map-behaviour-in-clojure
   (lazy-seq
@@ -38,31 +31,47 @@
   [& vs]
   (apply map-ext + 0 vs))
 
+(defn monzo-to-ratio
+  [monzo-map]
+  (apply * (map (fn [pred] (reduce (fn [acc [base exp]] (* acc
+                                                         (math/expt base exp)))
+                                  1
+                                  (filter (fn [[k v]] (pred v))
+                                          monzo-map)))
+                [pos? neg?])))
 
-(defrecord Ratio [numerator denominator])
+(defn monzo-to-vector
+  [monzo-map]
+  (map #(if-let [x (monzo-map %)] x 0)
+       (primes/primes-up-to (apply max
+                                   (keys monzo-map)))))
 
-(defrecord Monzo [vector])
+(defn vector-to-monzo
+  [v]
+  (into {}
+        (map (fn [base exp] [base exp])
+             primes/lazy-primes
+             v)))
 
-(defprotocol IJust
-  "A protocol defining a JI harmonic relationship between two pitches"
-  (to-monzo [this])
-  (to-ratio [this])
-  (mult [this multratio]))
+(defn log2
+  [x]
+  (/ (Math/log x)
+     (Math/log 2)))
 
-(extend-type Ratio
-  IJust
-  (to-monzo [this]
-    (Monzo. (apply map-ext - 0 (map (fn [facs] (map (fn [p] (count (filter #(= p %)
-                                                                         facs)))
-                                                   (primes-below (inc (apply max facs)))))
-                                    (map primefactors
-                                         [(.numerator this) (.denominator this)])))))
-  (to-ratio [this] this)
-  (mult [this multratio] (Ratio. (* (.numerator this) (.numerator multratio))
-                                 (* (.denominator this) (.denominator multratio)))))
+(defn get-nlimit-edo-patent-val
+  [limit edo-steps]
+  (map (fn [p] (Math/round (* edo-steps (log2 p))))
+       (primes/primes-up-to limit)))
 
-(extend-type Monzo
-  IJust
-  (to-monzo [this] this)
-  (to-ratio [this] this) ;;todo
-  (mult [this multratio] this)) ;;todo
+(defn get-errors-from-edo-patent-val
+  [patent-val]
+  (into {}
+        (map (fn [p pv] [p (- pv
+                             (* (first patent-val) (log2 p)))])
+             primes/lazy-primes
+             patent-val)))
+
+(defn tenney-height
+  [monzo]
+  (apply + (map (fn [[k v]] (* v (log2 k)))
+                monzo)))
