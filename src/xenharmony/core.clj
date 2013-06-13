@@ -1,8 +1,12 @@
 (ns xenharmony.core
   "Functions for harmony calculations"
+  [:use
+   plumbing.core]
   [:require
    [clojure.math.numeric-tower :as math]
-   [xenharmony.primes :as primes]])
+   [xenharmony.primes :as primes]
+   [xenharmony.edo :as edo]
+   [plumbing.graph :as graph]])
 
 
 (defn add-monzo-maps
@@ -20,7 +24,9 @@
   (add-monzo-maps (frequencies (primes/prime-factors (numerator ratio)))
                   (negate-map-vals (frequencies (primes/prime-factors (denominator ratio))))))
 
-(defn map-ext [f ext & seqs] ;;lifted from http://stackoverflow.com/questions/9033678/changing-map-behaviour-in-clojure
+(defn map-ext
+  "lifted from http://stackoverflow.com/questions/9033678/changing-map-behaviour-in-clojure"
+  [f ext & seqs]
   (lazy-seq
    (if (some seq seqs)
      (cons (apply f (map #(if (seq %) (first %) ext) seqs))
@@ -56,7 +62,7 @@
 
 (defn tenney-height ;;find another source for equation - this from the wiki doesn't work right
   [monzo]
-  (apply + (map (fn [[k v]] (* v (log2 k)))
+  (apply + (map (fn [[k v]] (* v (edo/log2 k)))
                 monzo)))
 
 
@@ -77,3 +83,11 @@
      (mixolydian 0))
   ([n] (concat (map #(+ n %) [0 2 4 5 7 9 10])
                (lazy-seq (mixolydian (+ 12 n))))))
+
+
+(defmacro extend-graph
+  "takes an existing graph, and adds a new fnk to it, named new-key, using relative as the argument, and an anonymous fn new-fn as the expression"
+  [old-graph relative new-key new-fn]
+  `(assoc ~old-graph
+    ~new-key
+    (fnk [~(symbol (name relative))] (~new-fn ~(symbol (name relative))))))
